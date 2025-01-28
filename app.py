@@ -23,20 +23,9 @@ def toilets_positions():
 
 @app.route("/click_location", methods=["POST"])
 def click_location():
-    x = request.form.get("x")
-    y = request.form.get("y")
-    for toilet in toilets:
-        if (
-            toilet["location"][0] <= int(x) <= toilet["location"][0] + 10
-            and toilet["location"][1] <= int(y) <= toilet["location"][1] + 10
-        ):
-            print("Click is on the toilet")
-            break
-    else:
-        print("Click is not on the toilet")
-    # Process the click location as needed
-    print(f"Click location received: x={x}, y={y}")
-    return f"Click location received: x={x}, y={y}"
+    toiletname = request.form.get("toiletname")
+    print("Click is on the toilet:", toiletname)
+    return jsonify(success=True)
 
 
 @app.route("/favicon.ico")
@@ -67,12 +56,14 @@ def home():
                     xhr.send("x=" + x + "&y=" + y);
                 }
             </script>
+           
             <script>
                 fetch('/toilets_positions')
                     .then(response => response.json())
                     .then(data => {
                         console.log(data); // `data` is now a JavaScript object
                         data.data.forEach(toilet => {
+                            toiletIndex = data.data.indexOf(toilet);
                             console.log(toilet);
                             var x = toilet.location[0];
                             var y = toilet.location[1];
@@ -84,8 +75,15 @@ def home():
                             toiletDiv.style.height = '50px';
                             toiletDiv.style.backgroundColor = 'red';
                             toiletDiv.style.borderRadius = '50%';
+                            toiletDiv.toiletname = toilet.name;
                             document.body.appendChild(toiletDiv);
                             console.log("Image size: width=" + x + ", height=" + y);
+                            toiletDiv.addEventListener('click', function(event) {
+                                var xhr = new XMLHttpRequest();
+                                xhr.open("POST", "/click_location", true);
+                                xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                                xhr.send("x=" + x + "&y=" + y + "&toiletname=" + toilet.name);
+                            });
                         });
                     });
             </script>
