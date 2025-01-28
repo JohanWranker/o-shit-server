@@ -16,6 +16,11 @@ toilets = [
 ]
 
 
+@app.route("/favicon.ico")
+def favicon():
+    return app.send_static_file("favicon.png")
+
+
 @app.route("/clicked_toilet", methods=["GET"])
 def clicked_toilet():
     name = request.args.get("name")
@@ -30,49 +35,17 @@ def toilets_positions():
     return jsonify(data=toilets)
 
 
-@app.route("/click_location", methods=["POST"])
-def click_location():
-    toiletname = request.form.get("toiletname")
-    print("Click is on the toilet:", toiletname)
-    return jsonify(success=True)
-
-
-@app.route("/favicon.ico")
-def favicon():
-    return app.send_static_file("favicon.png")
-
-
 @app.route("/")
 def home():
     return """
     <!DOCTYPE html>
         <body style="overflow: scroll;">
             <img src="/static/image.jpg" alt="Sample Image" onclick="sendClickLocation(event)">
-            
-           
-           
-            <script>
-                function sendClickLocation(event) {
-                    var x = event.clientX;
-                    var y = event.clientY;
-                    var img = document.querySelector('img');
-                    var imgWidth = img.clientWidth;
-                    var imgHeight = img.clientHeight;
-                    console.log("Image size: width=" + imgWidth + ", height=" + imgHeight);
-                    var xhr = new XMLHttpRequest();
-                    xhr.open("GET", "/click_location?name={}", true);
-                    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-                    xhr.send("x=" + x + "&y=" + y);
-                }
-            </script>
-           
             <script>
                 fetch('/toilets_positions')
                     .then(response => response.json())
                     .then(data => {
-                        console.log(data); // `data` is now a JavaScript object
                         data.data.forEach(toilet => {
-                            console.log(toilet);
                             var toiletDiv = document.createElement('div');
                             toiletDiv.style.position = 'absolute';
                             toiletDiv.style.left = `${toilet.location[0]}px`;
