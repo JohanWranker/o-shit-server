@@ -16,6 +16,15 @@ toilets = [
 ]
 
 
+@app.route("/clicked_toilet", methods=["GET"])
+def clicked_toilet():
+    name = request.args.get("name")
+    for toilet in toilets:
+        if toilet["name"] == name:
+            return jsonify(toilet)
+    return jsonify({"error": "Toilet not found"}), 404
+
+
 @app.route("/toilets_positions")
 def toilets_positions():
     return jsonify(data=toilets)
@@ -51,7 +60,7 @@ def home():
                     var imgHeight = img.clientHeight;
                     console.log("Image size: width=" + imgWidth + ", height=" + imgHeight);
                     var xhr = new XMLHttpRequest();
-                    xhr.open("POST", "/click_location", true);
+                    xhr.open("GET", "/click_location?name={}", true);
                     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
                     xhr.send("x=" + x + "&y=" + y);
                 }
@@ -63,26 +72,21 @@ def home():
                     .then(data => {
                         console.log(data); // `data` is now a JavaScript object
                         data.data.forEach(toilet => {
-                            toiletIndex = data.data.indexOf(toilet);
                             console.log(toilet);
-                            var x = toilet.location[0];
-                            var y = toilet.location[1];
                             var toiletDiv = document.createElement('div');
                             toiletDiv.style.position = 'absolute';
-                            toiletDiv.style.left = `${x}px`;
-                            toiletDiv.style.top = `${y}px`;
+                            toiletDiv.style.left = `${toilet.location[0]}px`;
+                            toiletDiv.style.top = `${toilet.location[1]}px`;
                             toiletDiv.style.width = '50px';
                             toiletDiv.style.height = '50px';
                             toiletDiv.style.backgroundColor = 'red';
                             toiletDiv.style.borderRadius = '50%';
-                            toiletDiv.toiletname = toilet.name;
                             document.body.appendChild(toiletDiv);
-                            console.log("Image size: width=" + x + ", height=" + y);
                             toiletDiv.addEventListener('click', function(event) {
                                 var xhr = new XMLHttpRequest();
-                                xhr.open("POST", "/click_location", true);
+                                xhr.open("GET", "/clicked_toilet?name=" + toilet.name, true);
                                 xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-                                xhr.send("x=" + x + "&y=" + y + "&toiletname=" + toilet.name);
+                                xhr.send();
                             });
                         });
                     });
