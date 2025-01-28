@@ -80,7 +80,9 @@ def home():
                 fetch('/toilets_positions')
                     .then(response => response.json())
                     .then(data => {
-                        data.forEach(toilet => {
+                        console.log(data); // `data` is now a JavaScript object
+                        data.forEach(d => {
+                        d.forEach(toilet => {
                             console.log(toilet);
                             var x = toilet.location[0];
                             var y = toilet.location[1];
@@ -88,13 +90,14 @@ def home():
                             toiletDiv.style.position = 'absolute';
                             toiletDiv.style.left = `${x}px`;
                             toiletDiv.style.top = `${y}px`;
-                            toiletDiv.style.width = '100px';
-                            toiletDiv.style.height = '100px';
+                            toiletDiv.style.width = '10px';
+                            toiletDiv.style.height = '10px';
                             toiletDiv.style.backgroundColor = 'red';
                             toiletDiv.style.borderRadius = '50%';
                             document.body.appendChild(toiletDiv);
                             console.log("Image size: width=" + x + ", height=" + y);
                         });
+ });
                     });
             </script>
         </body>
