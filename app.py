@@ -11,14 +11,14 @@ toilets = [
     },
     {
         "name": "Toilet2",
-        "location": [200, 1000],
+        "location": [200, 200],
     },
 ]
 
 
 @app.route("/toilets_positions")
 def toilets_positions():
-    return jsonify([toilets])
+    return jsonify(data=toilets)
 
 
 @app.route("/click_location", methods=["POST"])
@@ -37,15 +37,6 @@ def click_location():
     # Process the click location as needed
     print(f"Click location received: x={x}, y={y}")
     return f"Click location received: x={x}, y={y}"
-
-
-""""""
-
-
-""" <script>
-                document.getElementById('toilet').style.left = `${toilet.location[0]}px`;
-                document.getElementById('toilet').style.top = `${toilet.location[1]}px`;
-            </script>"""
 
 
 @app.route("/favicon.ico")
@@ -81,8 +72,7 @@ def home():
                     .then(response => response.json())
                     .then(data => {
                         console.log(data); // `data` is now a JavaScript object
-                        data.forEach(d => {
-                        d.forEach(toilet => {
+                        data.data.forEach(toilet => {
                             console.log(toilet);
                             var x = toilet.location[0];
                             var y = toilet.location[1];
@@ -90,14 +80,13 @@ def home():
                             toiletDiv.style.position = 'absolute';
                             toiletDiv.style.left = `${x}px`;
                             toiletDiv.style.top = `${y}px`;
-                            toiletDiv.style.width = '10px';
-                            toiletDiv.style.height = '10px';
+                            toiletDiv.style.width = '50px';
+                            toiletDiv.style.height = '50px';
                             toiletDiv.style.backgroundColor = 'red';
                             toiletDiv.style.borderRadius = '50%';
                             document.body.appendChild(toiletDiv);
                             console.log("Image size: width=" + x + ", height=" + y);
                         });
- });
                     });
             </script>
         </body>
