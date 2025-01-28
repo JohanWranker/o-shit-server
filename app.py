@@ -58,7 +58,6 @@ def home():
                             toiletDiv.addEventListener('click', function(event) {
                                 var xhr = new XMLHttpRequest();
                                 xhr.open("GET", "/clicked_toilet?name=" + toilet.name, true);
-                                xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
                                 xhr.send();
                             });
                         });
