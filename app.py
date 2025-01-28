@@ -8,12 +8,23 @@ toilets = [
     {
         "name": "Toilet",
         "location": [30, 100],
+        "status": "free",
     },
     {
         "name": "Toilet2",
         "location": [200, 200],
+        "status": "free",
     },
 ]
+
+
+def occupy_toilet(name):
+    for toilet in toilets:
+        if toilet["name"] == name:
+            toilet["status"] = "occupied"
+            print(f"Toilet {name} is now occupied")
+            return jsonify(toilet)
+    return jsonify({"error": "Toilet not found"}), 404
 
 
 @app.route("/favicon.ico")
@@ -26,6 +37,7 @@ def clicked_toilet():
     name = request.args.get("name")
     for toilet in toilets:
         if toilet["name"] == name:
+            occupy_toilet(name)
             return jsonify(toilet)
     return jsonify({"error": "Toilet not found"}), 404
 
@@ -52,13 +64,30 @@ def home():
                             toiletDiv.style.top = `${toilet.location[1]}px`;
                             toiletDiv.style.width = '50px';
                             toiletDiv.style.height = '50px';
-                            toiletDiv.style.backgroundColor = 'red';
+                            if (toilet.status === 'free') {
+                                toiletDiv.style.backgroundColor = 'green';
+                            } else {
+                                toiletDiv.style.backgroundColor = 'red';
+                            }
                             toiletDiv.style.borderRadius = '50%';
                             document.body.appendChild(toiletDiv);
                             toiletDiv.addEventListener('click', function(event) {
-                                var xhr = new XMLHttpRequest();
-                                xhr.open("GET", "/clicked_toilet?name=" + toilet.name, true);
-                                xhr.send();
+                                fetch(`/clicked_toilet?name=${toilet.name}`);
+                                fetch('/toilets_positions')
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        data.data.forEach(updatedToilet => {
+                                            if (updatedToilet.name === toilet.name) {
+                                                toiletDiv.style.backgroundColor = updatedToilet.status === 'free' ? 'green' : 'red';
+                                            }
+                                        });
+                                    });
+                            });
+                            toiletDiv.addEventListener('mouseover', function(event) {
+                                toiletDiv.style.transform = 'scale(1.2)';
+                            });
+                            toiletDiv.addEventListener('mouseout', function(event) {
+                                toiletDiv.style.transform = 'scale(1)';
                             });
                         });
                     });
