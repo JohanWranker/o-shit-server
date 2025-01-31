@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, request
 from flask import render_template
+import datetime
 
 
 app = Flask(__name__)
@@ -97,6 +98,15 @@ def home():
     """
 
 
+@app.route("/office_hours")
+def get_time_scope():
+    office_hours = {
+        "start": f"{datetime.datetime.now().strftime('%Y-%m-%d')}T08:00:00",
+        "end": f"{datetime.datetime.now().strftime('%Y-%m-%d')}T15:55:00",
+    }
+    return jsonify(office_hours)
+
+
 occupied_times = [
     {"start": "09:00", "end": "10:00"},
     {"start": "12:00", "end": "13:00"},
@@ -136,21 +146,25 @@ def time_slots():
         <div id="timeSlotsContainer"></div>
         <script>
             document.addEventListener('DOMContentLoaded', function() {
-                const startTime = "08:00";
-                const endTime = "15:55";
-                const timeSlotsContainer = document.getElementById('timeSlotsContainer');
+                fetch('/office_hours')
+                    .then(response => response.json())
+                    .then(officeHours => {
+                        console.log(officeHours);
 
-                function generateTimeSlots(start, end, interval) {
-                    const slots = [];
-                    let current = new Date(`1970-01-01T${start}:00`);
-                    const endDate = new Date(`1970-01-01T${end}:00`);
+                        const timeSlotsContainer = document.getElementById('timeSlotsContainer');
 
-                    while (current <= endDate) {
-                        slots.push(current.toTimeString().substring(0, 5));
-                        current.setMinutes(current.getMinutes() + interval);
-                    }
-                    return slots;
-                }
+                        function generateTimeSlots(start, end, interval) {
+                            const slots = [];
+                            let current = new Date(officeHours.start);
+                            const endDate = new Date(officeHours.end);
+
+                            while (current <= endDate) {
+                                slots.push(current.toTimeString().substring(0, 5));
+                                current.setMinutes(current.getMinutes() + officeHours.interval);
+                            }
+                            return slots;
+                        }
+                 });
 
                 const timeSlots = generateTimeSlots(startTime, endTime, 5);
 
