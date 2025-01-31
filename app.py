@@ -286,5 +286,87 @@ def time_picker2():
     """
 
 
+@app.route("/time_slots")
+def time_slots():
+    return """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <style>
+            .occupied {
+                background-color: red;
+            }
+            .available {
+                background-color: green;
+            }
+            .time-slot {
+                display: inline-block;
+                width: 60px;
+                height: 30px;
+                margin: 2px;
+                text-align: center;
+                line-height: 30px;
+                border: 1px solid #000;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="timeSlotsContainer"></div>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const startTime = "08:00";
+                const endTime = "15:55";
+                const timeSlotsContainer = document.getElementById('timeSlotsContainer');
+
+                function generateTimeSlots(start, end, interval) {
+                    const slots = [];
+                    let current = new Date(`1970-01-01T${start}:00`);
+                    const endDate = new Date(`1970-01-01T${end}:00`);
+
+                    while (current <= endDate) {
+                        slots.push(current.toTimeString().substring(0, 5));
+                        current.setMinutes(current.getMinutes() + interval);
+                    }
+                    return slots;
+                }
+
+                const timeSlots = generateTimeSlots(startTime, endTime, 5);
+
+                fetch('/available_times')
+                    .then(response => response.json())
+                    .then(availableTimes => {
+                        fetch('/occupied_times')
+                            .then(response => response.json())
+                            .then(occupiedTimes => {
+                                timeSlots.forEach(slot => {
+                                    const slotDiv = document.createElement('div');
+                                    slotDiv.classList.add('time-slot');
+                                    slotDiv.textContent = slot;
+
+                                    const isOccupied = occupiedTimes.some(time => {
+                                        return slot >= time.start && slot < time.end;
+                                    });
+
+                                    const isAvailable = availableTimes.some(time => {
+                                        return slot >= time.start && slot < time.end;
+                                    });
+
+                                    if (isOccupied) {
+                                        slotDiv.classList.add('occupied');
+                                    } else if (isAvailable) {
+                                        slotDiv.classList.add('available');
+                                    }
+
+                                    timeSlotsContainer.appendChild(slotDiv);
+                                });
+                            });
+                    });
+            });
+        </script>
+    </body>
+    </html>
+    """
+
+
 if __name__ == "__main__":
     app.run(debug=True)
