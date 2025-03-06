@@ -1,0 +1,25 @@
+version: '3.8'
+services:
+  o_shit_app:
+    build: ./o-shit-app
+    container_name: o_shit_app
+    expose:
+      - "5000"
+    environment:
+      - FLASK_ENV=production
+
+  caddy:
+    image: caddy:latest
+    container_name: caddy_proxy
+    ports:
+      - "5000:5000"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:
