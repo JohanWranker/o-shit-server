@@ -1,1 +1,1 @@
-# o-shit-server
+# o-shit-online

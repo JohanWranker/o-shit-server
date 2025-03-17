@@ -43,19 +43,17 @@ def clicked_toilet():
     return jsonify({"error": "Toilet not found"}), 404
 
 
-@app.route("/toilets_positions")
+@app.route("/toilets_positions", methods=["GET"])
 def toilets_positions():
     return jsonify(data=toilets)
-
-@app.route("/.well-known/")
-def well_known():
-    return app.send_static_file(".well-known")
-
 
 @app.route("/")
 def home():
     return """
     <!DOCTYPE html>
+        <head>
+            <link rel="stylesheet" href="/static/style.css">
+        </head>
         <body style="overflow: scroll;">
             <img src="/static/image.jpg" alt="Sample Image" onclick="sendClickLocation(event)">
             <script>
@@ -70,29 +68,21 @@ def home():
                             toiletDiv.style.width = '50px';
                             toiletDiv.style.height = '50px';
                             if (toilet.status === 'free') {
-                                toiletDiv.style.backgroundColor = 'green';
+                                toiletDiv.className = 'available';
                             } else {
-                                toiletDiv.style.backgroundColor = 'red';
+                                toiletDiv.className = 'occupied';
                             }
                             toiletDiv.style.borderRadius = '50%';
                             document.body.appendChild(toiletDiv);
-                            toiletDiv.addEventListener('click', function(event) {
-                                fetch(`/clicked_toilet?id=${toilet.id}`);
-                                fetch('/toilets_positions')
-                                    .then(response => response.json())
-                                    .then(data => {
-                                        data.data.forEach(updatedToilet => {
-                                            if (updatedToilet.id === toilet.id) {
-                                                toiletDiv.style.backgroundColor = updatedToilet.status === 'free' ? 'green' : 'red';
-                                            }
-                                        });
-                                    });
-                            });
+                            
                             toiletDiv.addEventListener('mouseover', function(event) {
                                 toiletDiv.style.transform = 'scale(1.2)';
                             });
                             toiletDiv.addEventListener('mouseout', function(event) {
                                 toiletDiv.style.transform = 'scale(1)';
+                            });
+                            toiletDiv.addEventListener('click', function(event) {
+                                window.location.href = '/time_slots_table';
                             });
                         });
                     });
@@ -129,82 +119,66 @@ def get_occupied_times():
     return jsonify(occupied_times)
 
 
-@app.route("/time_slots")
-def time_slots():
-    return """
+@app.route("/time_slots_table")
+def time_slots_table():
+    table_html = """
     <!DOCTYPE html>
     <html>
     <head>
-        <style>
-            .occupied {
-                background-color: red;
-            }
-            .available {
-                background-color: green;
-            }
-            .time-slot {
-                display: inline-block;
-                width: 60px;
-                height: 30px;
-                margin: 2px;
-                text-align: center;
-                line-height: 30px;
-                border: 1px solid #000;
-            }
-        </style>
+        <link rel="stylesheet" href="/static/style.css">
     </head>
     <body>
-        <div id="timeSlotsContainer"></div>
+        <table id="timeSlotsTable" border="1" cellpadding="5">
+           <tr>
+               <th>Time</th>
+               <th>Status</th>
+           </tr>
+        </table>
         <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                function generateTimeSlots(startDate, endDate, interval) {
-                    const slots = [];
-                    let current = startDate;
-                    while (current <= endDate) {
-                        slots.push(new Date(current));
-                        current.setMinutes(current.getMinutes() + interval);
-                    }
-                    return slots;
+            function generateTimeSlots(startDate, endDate, interval) {
+                const slots = [];
+                let current = startDate;
+                while(current <= endDate) {
+                    slots.push(new Date(current));
+                    current.setMinutes(current.getMinutes() + interval);
                 }
-
-                fetch('/office_hours')
-                    .then(response => response.json())
-                    .then(officeHours => {
-                        const timeSlotsContainer = document.getElementById('timeSlotsContainer');
-                        const timeSlots = generateTimeSlots(new Date(officeHours.start), new Date(officeHours.end), officeHours.interval);
-                
-                        fetch('/occupied_times')
-                            .then(response => response.json())
-                            .then(occupiedTimes => {
-                                timeSlots.forEach(slot => {
-                                    const slotDiv = document.createElement('div');
-                                    slotDiv.classList.add('time-slot');
-                                    slotDiv.textContent = slot.toTimeString().substring(0, 5);
-
-                                    const isOccupied = occupiedTimes.some(time => {
-                                        const slotTime = slot;
-                                        const startTime = new Date(time.start);
-                                        const endTime = new Date(time.end);
-                                        return slotTime >= startTime && slotTime < endTime;
-                                    });
-
-                                    if (isOccupied) {
-                                        slotDiv.classList.add('occupied');
-                                    } else {
-                                        slotDiv.classList.add('available');
-                                    }
-
-                                    timeSlotsContainer.appendChild(slotDiv);
+                return slots;
+            }
+            fetch('/office_hours')
+                .then(res => res.json())
+                .then(officeHours => {
+                    const table = document.getElementById('timeSlotsTable');
+                    const timeSlots = generateTimeSlots(new Date(officeHours.start), new Date(officeHours.end), officeHours.interval);
+                    fetch('/occupied_times')
+                        .then(r => r.json())
+                        .then(occupiedTimes => {
+                            timeSlots.forEach(slot => {
+                                const slotTimeStr = slot.toTimeString().substring(0,5);
+                                const isOccupied = occupiedTimes.some(time => {
+                                    const startTime = new Date(time.start);
+                                    const endTime = new Date(time.end);
+                                    return slot >= startTime && slot < endTime;
                                 });
+                                const row = document.createElement('tr');
+                                const timeTd = document.createElement('td');
+                                const statusTd = document.createElement('td');
+                                timeTd.textContent = slotTimeStr;
+                                statusTd.textContent = isOccupied ? 'Occupied' : 'Available';
+                                statusTd.className = isOccupied ? 'occupied' : 'available';
+                                row.appendChild(timeTd);
+                                row.appendChild(statusTd);
+                                table.appendChild(row);
                             });
-
-                     });        
-            });
+                        });
+                });
         </script>
     </body>
     </html>
     """
+    return table_html
+
+
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000)  # Azure kräver att vi lyssnar på 0.0.0.0 och port 8000
+    app.run(host="0.0.0.0", port=8000)
