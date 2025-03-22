@@ -7,15 +7,119 @@ app = Flask(__name__)
 
 toilets = [
     {
-        "id": 1,
-        "location": [30, 100],
+        "id": 1, #IVSS
+        "location": [112, 90],
+        "status": "free",
+    },
+     {
+        "id": 2, #IVSS
+        "location": [112, 100],
         "status": "free",
     },
     {
-        "id": 2,
-        "location": [200, 200],
+        "id": 3, #IVSS
+        "location": [121, 90],
         "status": "free",
     },
+     {
+        "id": 4, #IVSS
+        "location": [121, 100],
+        "status": "free",
+    },
+     {
+        "id": 60, #stareway
+        "location": [169, 81-7*2],
+        "status": "free",
+    },
+     {
+        "id": 60, #stareway
+        "location": [169, 81-7],
+        "status": "free",
+    },
+     {
+        "id": 60, #stareway
+        "location": [169, 81],
+        "status": "free",
+    },
+
+
+
+     {
+        "id": 5, #copy
+        "location": [130, 100],
+        "status": "free",
+    },
+    {
+        "id": 10, #small kitchen
+        "location": [90, 326],
+        "status": "free",
+    },
+     {
+        "id": 11, #small kitchen
+        "location": [90, 333],
+        "status": "free",
+    },
+    {
+        "id": 12, #small kitchen
+        "location": [90, 340],
+        "status": "free",
+    },
+     {
+        "id": 13, #small kitchen
+        "location": [90, 347],
+        "status": "free",
+    },
+    {
+        "id": 50, #E
+        "location": [97, 355],
+        "status": "free",
+    },
+     {
+        "id": 51, #E
+        "location": [105, 355],
+        "status": "free",
+    },
+    
+
+
+
+
+    {
+        "id": 20, #bigexit
+        "location": [85, 485],
+        "status": "free",
+    },
+    {
+        "id": 21, #bigexit
+        "location": [85-7, 485],
+        "status": "free",
+    },
+    {
+        "id": 22, #bigexit
+        "location": [85-7*2, 485],
+        "status": "free",
+    },
+    {
+        "id": 23, #bigexit
+        "location": [85-7*3, 485],
+        "status": "free",
+    },
+    {
+        "id": 24, #bigexit
+        "location": [85-7*4, 490],
+        "status": "free",
+    },
+    {
+        "id": 30, #bigexit
+        "location": [125, 503],
+        "status": "free",
+    },
+    {
+        "id": 30, #bigexit
+        "location": [125, 510],
+        "status": "free",
+    },
+    
 ]
 
 
@@ -55,7 +159,7 @@ def home():
             <link rel="stylesheet" href="/static/style.css">
         </head>
         <body style="overflow: scroll;">
-            <img src="/static/image.jpg" alt="Sample Image" onclick="sendClickLocation(event)">
+            <img src="/static/o2.jpg" alt="o2 layout" onclick="sendClickLocation(event)">
             <script>
                 fetch('/toilets_positions')
                     .then(response => response.json())
@@ -65,8 +169,8 @@ def home():
                             toiletDiv.style.position = 'absolute';
                             toiletDiv.style.left = `${toilet.location[0]}px`;
                             toiletDiv.style.top = `${toilet.location[1]}px`;
-                            toiletDiv.style.width = '50px';
-                            toiletDiv.style.height = '50px';
+                            toiletDiv.style.width = '7px';
+                            toiletDiv.style.height = '7px';
                             if (toilet.status === 'free') {
                                 toiletDiv.className = 'available';
                             } else {
@@ -82,7 +186,7 @@ def home():
                                 toiletDiv.style.transform = 'scale(1)';
                             });
                             toiletDiv.addEventListener('click', function(event) {
-                                window.location.href = '/time_slots_table';
+                                window.location.href = `/time_slots_table?id=${toilet.id}`;
                             });
                         });
                     });
@@ -121,6 +225,7 @@ def get_occupied_times():
 
 @app.route("/time_slots_table")
 def time_slots_table():
+    toilet_id = request.args.get("id","")
     table_html = """
     <!DOCTYPE html>
     <html>
@@ -128,6 +233,7 @@ def time_slots_table():
         <link rel="stylesheet" href="/static/style.css">
     </head>
     <body>
+        <h2>Time Slots for Toilet {toilet_id}</h2>
         <table id="timeSlotsTable" border="1" cellpadding="5">
            <tr>
                <th>Time</th>
@@ -168,16 +274,57 @@ def time_slots_table():
                                 row.appendChild(timeTd);
                                 row.appendChild(statusTd);
                                 table.appendChild(row);
+                                row.addEventListener('click', function() {
+                                    if (!isOccupied) {
+                                        window.location.href = `/booking_page?toilet_id={toilet_id}&time=${slotTimeStr}`;
+                                    } else {
+                                        alert('This time slot is already occupied');    
+                                    }
+                                });
+                                
                             });
                         });
                 });
         </script>
     </body>
     </html>
-    """
+    """.replace("{toilet_id}", toilet_id)
     return table_html
 
-
+@app.route("/booking_page")
+def booking_page():
+    toilet_id = request.args.get("toilet_id","")
+    time = request.args.get("time","")
+    return """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <link rel="stylesheet" href="/static/style.css">
+    </head>
+    <body>
+        <h2>Booking Confirmation</h2>
+        <p>Are you sure you want to book Toilet {toilet_id} at {time}?</p>
+        <input type="text" id="name" name="name" placeholder="name" onfocus="this.placeholder = ''" onblur="this.placeholder = 'name'">
+        <button onclick="bookToilet()">Book</button>
+        <button onclick="window.history.back()">Cancel</button>
+        <script>
+            function bookToilet() {
+                const name = document.getElementById('name').value;
+                if (!name) {
+                    alert('Please enter your name');
+                    return;
+                }
+                fetch(`/book_toilet?toilet_id={toilet_id}&time={time}&name=${name}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        alert('Toilet booked successfully');
+                        window.location.href = '/';
+                    });
+            }
+        </script>
+    </body>
+    </html>
+    """.replace("{toilet_id}", toilet_id).replace("{time}", time)
 
 
 if __name__ == "__main__":
