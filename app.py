@@ -153,14 +153,6 @@ def book_toilet():
     return jsonify({"message": "Toilet booked successfully"}, 200)
 
 
-def occupy_toilet(toilet_id):
-    for toilet in toilets:
-        if toilet["id"] == toilet_id:
-            toilet["status"] = "occupied"
-            print(f"Toilet {toilet_id} is now occupied")
-            return jsonify(toilet)
-    return jsonify({"error": "Toilet not found"}), 404
-
 
 @app.route("/favicon.ico")
 def favicon():
@@ -172,7 +164,7 @@ def clicked_toilet():
     toilet_id = int(request.args.get("id"))
     for toilet in toilets:
         if toilet["id"] == toilet_id:
-            occupy_toilet(toilet_id)
+            #occupy_toilet(toilet_id)
             return jsonify(toilet)
     return jsonify({"error": "Toilet not found"}), 404
 
@@ -254,9 +246,24 @@ occupied_times = [
 ]
 
 
-@app.route("/occupied_times")
-def get_occupied_times():
-    return jsonify(occupied_times)
+@app.route("/toilet_status")
+def get_toilet_status():
+    toilet_id = request.args.get("toilet")
+    if not toilet_id:
+        return jsonify({"error": "Missing toilet ID"}), 400
+    try:
+        toilet_id = int(toilet_id)
+    except ValueError:
+        return jsonify({"error": "Invalid toilet ID"}), 400
+    if toilet_id not in status_db:
+        return jsonify({"error": "Toilet not found"}), 404
+    booked_times = []
+    for time in status_db[toilet_id]:
+        booked_times.append({
+            "start": f"{datetime.datetime.now().strftime('%Y-%m-%d')}T{time}:00",
+            "end": f"{datetime.datetime.now().strftime('%Y-%m-%d')}T{time}:10",
+        })
+    return jsonify(booked_times)
 
 
 @app.route("/time_slots_table")
@@ -291,12 +298,12 @@ def time_slots_table():
                 .then(officeHours => {
                     const table = document.getElementById('timeSlotsTable');
                     const timeSlots = generateTimeSlots(new Date(officeHours.start), new Date(officeHours.end), officeHours.interval);
-                    fetch('/occupied_times')
+                    fetch('/toilet_status?toilet={toilet_id}')
                         .then(r => r.json())
-                        .then(occupiedTimes => {
+                        .then(bookedTimes => {
                             timeSlots.forEach(slot => {
                                 const slotTimeStr = slot.toTimeString().substring(0,5);
-                                const isOccupied = occupiedTimes.some(time => {
+                                const isOccupied = bookedTimes.some(time => {
                                     const startTime = new Date(time.start);
                                     const endTime = new Date(time.end);
                                     return slot >= startTime && slot < endTime;
