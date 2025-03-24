@@ -126,13 +126,17 @@ status_db = {}
 for toilet in toilets:
     status_db[toilet["id"]] = {}
 
+
+
 @app.route("/book_toilet", methods=["GET"])
 def book_toilet():
     toilet_id = request.args.get("toilet_id")
     time = request.args.get("time")
     name = request.args.get("name")
-
-    if not toilet_id or not time or not name:
+    unbook = request.args.get("unbook")
+    ip = request.remote_addr
+   
+    if not toilet_id or not time or not (name or unbook):
         return jsonify({"error": "Missing parameters"}), 400
     try:
         toilet_id = int(toilet_id)
@@ -145,10 +149,19 @@ def book_toilet():
     except ValueError:
         return jsonify({"error": "Invalid time format"}), 400
     
+    if unbook:
+        if booking_time not in status_db[toilet_id]:
+            return jsonify({"error": "Time slot is not occupied"}), 400
+        if status_db[toilet_id][booking_time][1] != ip:
+            return jsonify({"error": "You cannot un-book this toilet"}), 403
+        del status_db[toilet_id][booking_time]
+        return jsonify({"message": "Toilet un-booked successfully"}, 200)
+    
+    #Book
     if booking_time in status_db[toilet_id]:
         return jsonify({"error": "Time slot is already occupied"}), 400
 
-    status_db[toilet_id][time] = name
+    status_db[toilet_id][booking_time] = [name, ip]
 
     return jsonify({"message": "Toilet booked successfully"}, 200)
 
@@ -157,17 +170,6 @@ def book_toilet():
 @app.route("/favicon.ico")
 def favicon():
     return app.send_static_file("favicon.png")
-
-
-@app.route("/clicked_toilet", methods=["GET"])
-def clicked_toilet():
-    toilet_id = int(request.args.get("id"))
-    for toilet in toilets:
-        if toilet["id"] == toilet_id:
-            #occupy_toilet(toilet_id)
-            return jsonify(toilet)
-    return jsonify({"error": "Toilet not found"}), 404
-
 
 @app.route("/toilets_positions", methods=["GET"])
 def toilets_positions():
@@ -247,7 +249,7 @@ occupied_times = [
 
 
 @app.route("/toilet_status")
-def get_toilet_status():
+def get_toilet_schedule():
     toilet_id = request.args.get("toilet")
     if not toilet_id:
         return jsonify({"error": "Missing toilet ID"}), 400
@@ -258,12 +260,34 @@ def get_toilet_status():
     if toilet_id not in status_db:
         return jsonify({"error": "Toilet not found"}), 404
     booked_times = []
-    for time in status_db[toilet_id]:
-        booked_times.append({
-            "start": f"{datetime.datetime.now().strftime('%Y-%m-%d')}T{time}:00",
-            "end": f"{datetime.datetime.now().strftime('%Y-%m-%d')}T{time}:10",
-        })
-    return jsonify(booked_times)
+
+    office_hours = {
+        "start": f"{datetime.datetime.now().strftime('%Y-%m-%d')}T08:00:00",
+        "end": f"{datetime.datetime.now().strftime('%Y-%m-%d')}T15:55:00",
+        "interval": 5,
+    }
+    time = datetime.datetime.strptime(f"{datetime.datetime.now().strftime('%Y-%m-%d')}T08:00:00", "%Y-%m-%dT%H:%M:%S")
+    end_time = datetime.datetime.strptime(f"{datetime.datetime.now().strftime('%Y-%m-%d')}T15:55:00", "%Y-%m-%dT%H:%M:%S")
+    schedule = []
+    while time < end_time:
+        short_time = time.strftime('%H:%M')
+        booking =  status_db[toilet_id].get(time, {})
+        
+        
+        item = {
+            "start": short_time,
+            "name": ""
+        }
+        if booking:
+            item["name"] = booking[0]
+            item["ip"] = booking[1]
+            item["status"] = "Occupied"
+        else:
+            item["status"] = "Available"
+        schedule.append(item)
+        time += datetime.timedelta(minutes=5)
+
+    return jsonify(schedule)
 
 
 @app.route("/time_slots_table")
@@ -301,27 +325,36 @@ def time_slots_table():
                     fetch('/toilet_status?toilet={toilet_id}')
                         .then(r => r.json())
                         .then(bookedTimes => {
-                            timeSlots.forEach(slot => {
-                                const slotTimeStr = slot.toTimeString().substring(0,5);
-                                const isOccupied = bookedTimes.some(time => {
-                                    const startTime = new Date(time.start);
-                                    const endTime = new Date(time.end);
-                                    return slot >= startTime && slot < endTime;
-                                });
+                            bookedTimes.forEach(slot => {
+                                const time = slot.start;
+                                const isOccupied = slot.status === "Occupied";
                                 const row = document.createElement('tr');
                                 const timeTd = document.createElement('td');
                                 const statusTd = document.createElement('td');
-                                timeTd.textContent = slotTimeStr;
-                                statusTd.textContent = isOccupied ? 'Occupied' : 'Available';
+                                timeTd.textContent = time;
+                                statusTd.textContent = isOccupied ? slot.name : 'Available';
                                 statusTd.className = isOccupied ? 'occupied' : 'available';
+                                
+
                                 row.appendChild(timeTd);
                                 row.appendChild(statusTd);
                                 table.appendChild(row);
                                 row.addEventListener('click', function() {
                                     if (!isOccupied) {
-                                        window.location.href = `/booking_page?toilet_id={toilet_id}&time=${slotTimeStr}`;
+                                        window.location.href = `/booking_page?toilet_id={toilet_id}&time=${time}`;
                                     } else {
-                                        alert('This time slot is already occupied');    
+                                        data = `/book_toilet?toilet_id={toilet_id}&time=${time}&unbook=yes`;
+                                        fetch(data)
+                                            .then(response => response.json())
+                                            .then(data => {
+                                                if (data[1] !== 200) {
+                                                    alert(data.error);
+                                                }
+                                                else {
+                                                    alert(data[0].message);
+                                                }
+                                                window.location.reload();
+                                            });
                                     }
                                 });
                                 
@@ -363,8 +396,14 @@ def booking_page():
                 fetch(`/book_toilet?toilet_id={toilet_id}&time={time}&name=${name}`)
                     .then(response => response.json())
                     .then(data => {
-                        alert('Toilet booked successfully');
+                        if (data[1] !== 200) {
+                            alert(data.error);
+                        }
+                        else {
+                            alert(data[0].message);
+                        }
                         window.location.href = '/';
+
                     });
             }
         </script>
