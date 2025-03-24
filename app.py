@@ -122,6 +122,36 @@ toilets = [
     
 ]
 
+status_db = {}
+for toilet in toilets:
+    status_db[toilet["id"]] = {}
+
+@app.route("/book_toilet", methods=["GET"])
+def book_toilet():
+    toilet_id = request.args.get("toilet_id")
+    time = request.args.get("time")
+    name = request.args.get("name")
+
+    if not toilet_id or not time or not name:
+        return jsonify({"error": "Missing parameters"}), 400
+    try:
+        toilet_id = int(toilet_id)
+    except ValueError:
+        return jsonify({"error": "Invalid toilet ID"}), 400
+    if toilet_id not in status_db:
+        return jsonify({"error": "Toilet not found"}), 404
+    try:
+        booking_time = datetime.datetime.strptime(f"{datetime.datetime.now().strftime('%Y-%m-%d')}T{time}:00", "%Y-%m-%dT%H:%M:%S")
+    except ValueError:
+        return jsonify({"error": "Invalid time format"}), 400
+    
+    if booking_time in status_db[toilet_id]:
+        return jsonify({"error": "Time slot is already occupied"}), 400
+
+    status_db[toilet_id][time] = name
+
+    return jsonify({"message": "Toilet booked successfully"}, 200)
+
 
 def occupy_toilet(toilet_id):
     for toilet in toilets:
@@ -159,8 +189,14 @@ def home():
             <link rel="stylesheet" href="/static/style.css">
         </head>
         <body style="overflow: scroll;">
-            <img src="/static/o2.jpg" alt="o2 layout" onclick="sendClickLocation(event)">
+            <img id="layoutImg" src="/static/o2.jpg" alt="o2 layout" onclick="sendClickLocation(event)">
             <script>
+                // Adjust body width to match the image's rendered width
+                window.addEventListener('load', function() {
+                    const layoutImg = document.getElementById('layoutImg');
+                    document.body.style.width = layoutImg.width + 'px';
+                });
+
                 fetch('/toilets_positions')
                     .then(response => response.json())
                     .then(data => {
@@ -290,6 +326,9 @@ def time_slots_table():
     </html>
     """.replace("{toilet_id}", toilet_id)
     return table_html
+
+
+
 
 @app.route("/booking_page")
 def booking_page():
