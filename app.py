@@ -145,6 +145,7 @@ statistics = {
     "start_time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     "qr_code_read": 0,
     "viewed": 0,
+    "root_viewed": 0,
     "bookings": 0,
 }
 status_db = {}
@@ -229,6 +230,7 @@ def qr():
 
 @app.route("/")
 def splash():
+    statistics["root_viewed"] += 1
     return """
     <!DOCTYPE html>
         <head>
@@ -491,6 +493,9 @@ def about():
             <li>Page viewed: {viewed}</li>
             <li>Bookings made: {bookings}</li>
             <li>Start time: {start_time}</li>
+            <li>Root page viewed: {root_viewed}</li>
+        </ul>
+
     </body>
     </html>
     """
@@ -498,6 +503,7 @@ def about():
     data = data.replace("{viewed}", str(statistics["viewed"]))
     data = data.replace("{bookings}", str(statistics["bookings"]))
     data = data.replace("{start_time}", statistics["start_time"])
+    data = data.replace("{root_viewed}", str(statistics["root_viewed"]))
     return data
 
 
