@@ -358,73 +358,74 @@ def time_slots_table():
     table_html = """
     <!DOCTYPE html>
     <html>
-    <head>
-        <link rel="stylesheet" href="/static/style.css">
-    </head>
-    <body>
-        <h2>Time Slots for Toilet {toilet_id}</h2>
-        <table id="timeSlotsTable" border="1" cellpadding="5">
-           <tr>
-               <th>Time</th>
-               <th>Status</th>
-           </tr>
-        </table>
-        <script>
-            function generateTimeSlots(startDate, endDate, interval) {
-                const slots = [];
-                let current = startDate;
-                while(current <= endDate) {
-                    slots.push(new Date(current));
-                    current.setMinutes(current.getMinutes() + interval);
+        <head>
+            <link rel="stylesheet" href="/static/style.css">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body>
+            <h2>Time Slots for toilet</h2>
+            <table id="timeSlotsTable" border="1" cellpadding="5">
+            <tr>
+                <th>Time</th>
+                <th>Status</th>
+            </tr>
+            </table>
+            <script>
+                function generateTimeSlots(startDate, endDate, interval) {
+                    const slots = [];
+                    let current = startDate;
+                    while(current <= endDate) {
+                        slots.push(new Date(current));
+                        current.setMinutes(current.getMinutes() + interval);
+                    }
+                    return slots;
                 }
-                return slots;
-            }
-            fetch('/office_hours')
-                .then(res => res.json())
-                .then(officeHours => {
-                    const table = document.getElementById('timeSlotsTable');
-                    const timeSlots = generateTimeSlots(new Date(officeHours.start), new Date(officeHours.end), officeHours.interval);
-                    fetch('/toilet_status?toilet={toilet_id}')
-                        .then(r => r.json())
-                        .then(bookedTimes => {
-                            bookedTimes.forEach(slot => {
-                                const time = slot.start;
-                                const isOccupied = slot.status === "Occupied";
-                                const row = document.createElement('tr');
-                                const timeTd = document.createElement('td');
-                                const statusTd = document.createElement('td');
-                                timeTd.textContent = time;
-                                statusTd.textContent = isOccupied ? slot.name : 'Available';
-                                statusTd.className = isOccupied ? 'occupied' : 'available';
-                                
+                fetch('/office_hours')
+                    .then(res => res.json())
+                    .then(officeHours => {
+                        const table = document.getElementById('timeSlotsTable');
+                        const timeSlots = generateTimeSlots(new Date(officeHours.start), new Date(officeHours.end), officeHours.interval);
+                        fetch('/toilet_status?toilet={toilet_id}')
+                            .then(r => r.json())
+                            .then(bookedTimes => {
+                                bookedTimes.forEach(slot => {
+                                    const time = slot.start;
+                                    const isOccupied = slot.status === "Occupied";
+                                    const row = document.createElement('tr');
+                                    const timeTd = document.createElement('td');
+                                    const statusTd = document.createElement('td');
+                                    timeTd.textContent = time;
+                                    statusTd.textContent = isOccupied ? slot.name : 'Available';
+                                    statusTd.className = isOccupied ? 'occupied' : 'available';
+                                    
 
-                                row.appendChild(timeTd);
-                                row.appendChild(statusTd);
-                                table.appendChild(row);
-                                row.addEventListener('click', function() {
-                                    if (!isOccupied) {
-                                        window.location.href = `/booking_page?toilet_id={toilet_id}&time=${time}`;
-                                    } else {
-                                        data = `/book_toilet?toilet_id={toilet_id}&time=${time}&unbook=yes`;
-                                        fetch(data)
-                                            .then(response => response.json())
-                                            .then(data => {
-                                                if (data[1] !== 200) {
-                                                    alert(data.error);
-                                                }
-                                                else {
-                                                    alert(data[0].message);
-                                                }
-                                                window.location.reload();
-                                            });
-                                    }
+                                    row.appendChild(timeTd);
+                                    row.appendChild(statusTd);
+                                    table.appendChild(row);
+                                    row.addEventListener('click', function() {
+                                        if (!isOccupied) {
+                                            window.location.href = `/booking_page?toilet_id={toilet_id}&time=${time}`;
+                                        } else {
+                                            data = `/book_toilet?toilet_id={toilet_id}&time=${time}&unbook=yes`;
+                                            fetch(data)
+                                                .then(response => response.json())
+                                                .then(data => {
+                                                    if (data[1] !== 200) {
+                                                        alert(data.error);
+                                                    }
+                                                    else {
+                                                        alert(data[0].message);
+                                                    }
+                                                    window.location.reload();
+                                                });
+                                        }
+                                    });
+                                    
                                 });
-                                
                             });
-                        });
-                });
-        </script>
-    </body>
+                    });
+            </script>
+        </body>
     </html>
     """.replace("{toilet_id}", toilet_id)
     return table_html
@@ -439,40 +440,64 @@ def booking_page():
     return """
     <!DOCTYPE html>
     <html>
-    <head>
-        <link rel="stylesheet" href="/static/style.css">
-    </head>
-    <body>
-        <h2>Booking Confirmation</h2>
-        <p>Are you sure you want to book Toilet {toilet_id} at {time}?</p>
-        <input type="text" id="name" name="name" placeholder="name" onfocus="this.placeholder = ''" onblur="this.placeholder = 'name'">
-        <button onclick="bookToilet()">Book</button>
-        <button onclick="window.history.back()">Cancel</button>
-        <script>
-            function bookToilet() {
-                const name = document.getElementById('name').value;
-                if (!name) {
-                    alert('Please enter your name');
-                    return;
+        <head>
+            <link rel="stylesheet" href="/static/style.css">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body>
+            <h2>Booking</h2>
+            <p>Complete form to book the toilet at {time}</p>
+            
+            <input type="text" id="name" name="name" class="input-box" placeholder="name" onfocus="this.placeholder = ''" onblur="this.placeholder = 'name'">
+            <button onclick="bookToilet()">Book</button>
+            <button onclick="window.history.back()">Cancel</button>
+            <script>
+                function bookToilet() {
+                    const name = document.getElementById('name').value;
+                    if (!name) {
+                        alert('Please enter your name');
+                        return;
+                    }
+                    fetch(`/book_toilet?toilet_id={toilet_id}&time={time}&name=${encodeURIComponent(name)}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data[1] !== 200) {
+                                alert(data.error);
+                                window.location.href = '/home';
+                            }
+                            window.location.href = '/booking_completed?toilet_id={toilet_id}&time={time}&name=' + encodeURIComponent(name);
+                        });
                 }
-                fetch(`/book_toilet?toilet_id={toilet_id}&time={time}&name=${encodeURIComponent(name)}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data[1] !== 200) {
-                            alert(data.error);
-                        }
-                        else {
-                            alert(data[0].message);
-                        }
-                        window.location.href = '/home';
-
-                    });
-            }
-        </script>
-    </body>
+            </script>
+        </body>
     </html>
     """.replace("{toilet_id}", toilet_id).replace("{time}", time)
 
+@app.route("/booking_completed")
+def booking_completed():
+    toilet_id = request.args.get("toilet_id","")
+    time = request.args.get("time","")
+    name = request.args.get("name","")
+    statistics["bookings"] += 1
+    data = """
+    <!DOCTYPE html>
+    <html>
+        <head>
+            <link rel="stylesheet" href="/static/style.css">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <meta http-equiv="refresh" content="1;url=/home">
+        </head>
+        <body>
+            <h2>Booking Completed</h2>
+            <p>Thanks {name}, booking has been registed.</p>
+            <button onclick="window.location.href='/home'">Go to Booking Page</button>
+        </body>
+    </html>
+    """
+    data = data.replace("{name}", name)
+    data = data.replace("{toilet_id}", toilet_id)
+    data = data.replace("{time}", time)
+    return data
 
 @app.route("/about")
 def about():
