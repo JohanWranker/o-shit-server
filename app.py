@@ -298,8 +298,8 @@ def home():
     """
 
 def time_range():
-    start_time = datetime.datetime.strptime(f"{datetime.datetime.now().strftime('%Y-%m-%d')}T08:00:00", "%Y-%m-%dT%H:%M:%S")
-    end_time = datetime.datetime.strptime(f"{datetime.datetime.now().strftime('%Y-%m-%d')}T23:55:00", "%Y-%m-%dT%H:%M:%S")# T15:55:00", "%Y-%m-%dT%H:%M:%S")
+    start_time = datetime.datetime.strptime(f"{datetime.datetime.now().strftime('%Y-%m-%d')}T07:00:00", "%Y-%m-%dT%H:%M:%S")
+    end_time = datetime.datetime.strptime(f"{datetime.datetime.now().strftime('%Y-%m-%d')}T16:55:00", "%Y-%m-%dT%H:%M:%S")
     return (start_time, end_time)
 
 @app.route("/office_hours")
