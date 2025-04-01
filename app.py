@@ -129,15 +129,11 @@ toilets = [
 
     },
     {
-        "id": 31, #classic
+        "id": 32, #classic
         "location": [125 * 4.1-15, 510 * 1.72-30],
 
     },
-    {
-        "id": 31, #classic
-        "location": [125 * 4.1+15, 510 * 1.72-30],
-
-    },
+   
     
 ]
 
