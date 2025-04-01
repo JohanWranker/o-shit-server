@@ -236,11 +236,12 @@ def splash():
         <head>
             <link rel="stylesheet" href="/static/style.css">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <meta http-equiv="refresh" content="2;url=/home">
         </head>
-        <body>
-            <h1>Welcome to the O2 Toilet Booking System</h1>
-            <button onclick="window.location.href='/home'">Go to Booking Page Now</button>
+        <body style="text-align: center;">
+            <h1>This is the time people spend on the throne</h1>
+            <img src="/static/toilet_time.png" alt="Toilet Time" style="width: 100%; height: auto; margin: 0 auto;">
+            <p>Even if it is not 1 of April, booking is still open</p>
+            <button onclick="window.location.href='/home'" style="margin-top: 10px;">Booking Page</button>
         </body>
     </html>
     """
